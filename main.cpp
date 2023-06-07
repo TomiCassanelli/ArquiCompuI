@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+// EasyPIO.h maneja todo lo interno a la raspberry
+
 using namespace std;
 
 // Declaración de la función en ensamblador
@@ -11,63 +13,122 @@ using namespace std;
 
 const char contrasenaPreestablecida[] = "12345";
 
-void menu();
-void menu() {
-  cout << endl;
-  cout << "   MENU DE OPCIONES" << endl;
-  cout << "***********************" << endl;
-  cout << "*   [1]- OPCION 1     *" << endl;
-  cout << "*   [2]- OPCION 2     *" << endl;
-  cout << "*   [3]- OPCION 3     *" << endl;
-  cout << "*   [4]- OPCION 4     *" << endl;
-  cout << "*   [5]- OPCION 5     *" << endl;
-  cout << "*   [0]- OPCION 0     *" << endl;
-  cout << "***********************" << endl;
-  cout << endl;
+void retardo(unsigned long int);
+void retardo(unsigned long int a) {
+  while (a) a--;
 }
 
-// void displayLights(int lights) {
-//   for (int i = 0; i < 8; i++) {
-//     if ((lights >> i) & 1)
-//       std::cout << "*";
-//     else
-//       std::cout << "_";
-//   }
-//   std::cout << std::endl;
-// }
+void mostrar(unsigned char);
+void mostrar(unsigned char dato) {
+  for (unsigned char mascara = 128; mascara > 0; mascara >>= 1) {
+    if (dato & mascara) {
+      cout << "*";
+    } else {
+      cout << "_";
+    }
+  }
+}
+
+void menu();
+void menu() {
+  printf("\n");
+  printf("   MENU DE OPCIONES\n");
+  printf("***********************\n");
+  printf("*   [1]- OPCION 1     *\n");
+  printf("*   [2]- OPCION 2     *\n");
+  printf("*   [3]- OPCION 3     *\n");
+  printf("*   [4]- OPCION 4     *\n");
+  printf("*   [5]- OPCION 5     *\n");
+  printf("*   [0]- OPCION 0     *\n");
+  printf("***********************\n");
+  printf("\n");
+}
 
 void ingresarContrasena() {
+  char contrasenaPreestablecida[] = "12345";
   char contrasenaIngresada[6];
   int intentos = 3;
 
   while (intentos > 0) {
-    cout << "Ingrese la contrasena de 5 digitos: ";
-    cin >> contrasenaIngresada;
+    printf("Ingrese la contrasena de 5 digitos: ");
 
-    // for (int i = 0; i < 5; ++i) {
-    //   contrasenaIngresada[i] = getch();
-    //   cout << "*";
-    // }
-    // contrasenaIngresada[5] = '\0';
+    char caracter;
+    int posicion = 0;
 
-    cout << endl;
+    while ((caracter = getch()) != '\r') {
+      if (caracter != '\b') {
+        contrasenaIngresada[posicion++] = caracter;
+        printf("*");
+      } else {
+        if (posicion > 0) {
+          printf("\b \b");
+          posicion--;
+        }
+      }
+    }
+    contrasenaIngresada[posicion] = '\0';
+    printf("\n");
 
     if (strlen(contrasenaIngresada) != 5) {
-      cout << "La contrasena debe tener exactamente 5 digitos." << endl;
+      printf("La contrasena debe tener exactamente 5 digitos.\n");
     }
 
     if (strcmp(contrasenaIngresada, contrasenaPreestablecida) == 0) {
       return;
     }
-
-    cout << "Contrasena incorrecta. Intentos restantes: " << intentos-- << endl;
+    printf("Contrasena incorrecta. Intentos restantes: %d\n", --intentos);
   }
-  cout << "Has excedido el numero maximo de intentos. Abortando." << endl;
-  exit(0);  // Se detiene el programa
+  printf("Has excedido el numero maximo de intentos. Adios!.\n");
+  exit(0);
+}
+
+void auto_fantastico(unsigned long int velocidad = 1000000) {
+  unsigned int dato;
+  while (1) {
+    dato = 0x80;
+    cout << "Presione ESC para regresar al menu principal" << endl;
+    cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
+            "para abajo para disminuirla"
+         << endl;
+    cout << "Demora: " << velocidad << endl;
+    for (int t = 0; t < 8; t++) {
+      // cout << "Presione ESC para regresar al menu principal" << endl;
+      // cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
+      //         "para abajo para disminuirla"
+      //      << endl;
+      // cout << "Demora: " << velocidad << endl;
+      mostrar(dato);
+      retardo(velocidad);
+      // system("cls");
+      dato = dato >> 1;
+      printf("\n");
+      if (GetAsyncKeyState(VK_ESCAPE) & 0x0001) {
+        return;
+      }
+    }
+    dato = 0x01;
+    for (int i = 0; i < 6; i++) {
+      // cout << "Presione ESC para regresar al menu principal" << endl;
+      // cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
+      //         "para abajo para disminuirla"
+      //      << endl;
+      // cout << "Demora: " << velocidad << endl;
+      dato = dato << 1;
+      mostrar(dato);
+      retardo(velocidad);
+      // system("cls");
+
+      if (GetAsyncKeyState(VK_ESCAPE) & 0x0001) {
+        return;
+      }
+    }
+  }
 }
 
 int main() {
   int opcion = 0;
+  unsigned long int velocidadAux = 145000000;
+  unsigned long int velocidad = velocidadAux;
 
   ingresarContrasena();
 
@@ -76,24 +137,10 @@ int main() {
     cin >> opcion;
     switch (opcion) {
       case 1:
-        //         const int DELAY_MS = 200;
-
-        // int lights = 1;
-        // int direction = 1;
-
-        // while (true) {
-        //   displayLights(lights);
-
-        //   if (lights == 128)
-        //     direction = -1;
-        //   else if (lights == 1)
-        //     direction = 1;
-
-        //   lights <<= direction;
-        //    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_MS));
-        //   system("cls"); // Para limpiar la pantalla en Windows,
-        //   utiliza "clear"
-        //         }
+        system("cls");
+        auto_fantastico(velocidad);
+        opcion = 0;
+        velocidad = velocidadAux;
         break;
       case 2:
         /* code */
