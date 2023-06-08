@@ -1,8 +1,13 @@
-#include <conio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <windows.h>
 
-#include <iostream>
+// #include <iostream>
+#include <ncurses.h>
+
+#include "EasyPIO.h"
+
+// ncursed
 
 // EasyPIO.h maneja todo lo interno a la raspberry
 
@@ -22,9 +27,9 @@ void mostrar(unsigned char);
 void mostrar(unsigned char dato) {
   for (unsigned char mascara = 128; mascara > 0; mascara >>= 1) {
     if (dato & mascara) {
-      cout << "*";
+      printf("*");
     } else {
-      cout << "_";
+      printf("_");
     }
   }
 }
@@ -61,7 +66,7 @@ void ingresarContrasena() {
         printf("*");
       } else {
         if (posicion > 0) {
-          printf("\b \b");
+          printf("\b \b");  // permite el borrado
           posicion--;
         }
       }
@@ -82,24 +87,19 @@ void ingresarContrasena() {
   exit(0);
 }
 
-void auto_fantastico(unsigned long int velocidad = 1000000) {
-  unsigned int dato;
+void autoFantastico(unsigned long int velocidad = 10000000) {
+  unsigned int dato, t, i;
+  cout << endl;
   while (1) {
     dato = 0x80;
-    cout << "Presione ESC para regresar al menu principal" << endl;
-    cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
-            "para abajo para disminuirla"
-         << endl;
-    cout << "Demora: " << velocidad << endl;
-    for (int t = 0; t < 8; t++) {
-      // cout << "Presione ESC para regresar al menu principal" << endl;
-      // cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
-      //         "para abajo para disminuirla"
-      //      << endl;
+    for (t = 0; t < 8; t++) {
+      cout << "ESC = Frena Ejecucion" << endl;
+      cout << "UP = Aumenta Velocidad" << endl;
+      cout << "DOWN = Baja Velocidad" << endl;
       // cout << "Demora: " << velocidad << endl;
       mostrar(dato);
       retardo(velocidad);
-      // system("cls");
+      system("cls");
       dato = dato >> 1;
       printf("\n");
       if (GetAsyncKeyState(VK_ESCAPE) & 0x0001) {
@@ -107,16 +107,16 @@ void auto_fantastico(unsigned long int velocidad = 1000000) {
       }
     }
     dato = 0x01;
-    for (int i = 0; i < 6; i++) {
-      // cout << "Presione ESC para regresar al menu principal" << endl;
-      // cout << "Pulse la flecha para arriba para incrementar la velocidad, o "
-      //         "para abajo para disminuirla"
-      //      << endl;
+    for (i = 0; i < 6; i++) {
+      cout << "ESC = Frena Ejecucion" << endl;
+      cout << "UP = Aumenta Velocidad" << endl;
+      cout << "DOWN = Baja Velocidad" << endl;
       // cout << "Demora: " << velocidad << endl;
       dato = dato << 1;
       mostrar(dato);
       retardo(velocidad);
-      // system("cls");
+      system("cls");
+      printf("\n");
 
       if (GetAsyncKeyState(VK_ESCAPE) & 0x0001) {
         return;
@@ -127,8 +127,7 @@ void auto_fantastico(unsigned long int velocidad = 1000000) {
 
 int main() {
   int opcion = 0;
-  unsigned long int velocidadAux = 145000000;
-  unsigned long int velocidad = velocidadAux;
+  unsigned long int velocidad = 145000000;
 
   ingresarContrasena();
 
@@ -138,9 +137,8 @@ int main() {
     switch (opcion) {
       case 1:
         system("cls");
-        auto_fantastico(velocidad);
+        autoFantastico(velocidad);
         opcion = 0;
-        velocidad = velocidadAux;
         break;
       case 2:
         /* code */
