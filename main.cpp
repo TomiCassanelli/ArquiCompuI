@@ -1,36 +1,44 @@
-#include <string.h>
+// #include <stdio.h>
+// #include <Windows.h>
+// #include <ncurses.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
 
-// #include <iostream>
-#include <ncurses.h>
+#include <iostream>
 
-#include "EasyPIO.h"
+// #include "EasyPIO.h"
+#include "conio.h"
 
 // ncursed
-
 // EasyPIO.h maneja todo lo interno a la raspberry
 
 using namespace std;
 
-// Declaración de la función en ensamblador
-// extern "C" void procesarOpcion(int);
-
 const char contrasenaPreestablecida[] = "12345";
+const char led[] = {7, 8, 25, 24, 23, 18, 15, 14};
 
-void retardo(unsigned long int);
-void retardo(unsigned long int a) {
+void delay(unsigned long int);
+void delay(unsigned long int a) {
   while (a) a--;
 }
 
 void mostrar(unsigned char);
 void mostrar(unsigned char dato) {
-  for (unsigned char mascara = 128; mascara > 0; mascara >>= 1) {
-    if (dato & mascara) {
+  for (unsigned char tamano = 128; tamano > 0; tamano >>= 1) {
+    if (dato & tamano) {
       printf("*");
     } else {
       printf("_");
     }
+  }
+}
+
+void mostrarLED(unsigned char);
+void mostrarLED(unsigned char b) {
+  for (int i = 7; i >= 0; --i) {
+    char tmp = (b & (1 << i)) ? '*' : '_';
+    int status = (b & (1 << i)) ? 0 : 1;
+    // digitalWrite(led[i], status);
   }
 }
 
@@ -93,12 +101,9 @@ void autoFantastico(unsigned long int velocidad = 10000000) {
   while (1) {
     dato = 0x80;
     for (t = 0; t < 8; t++) {
-      cout << "ESC = Frena Ejecucion" << endl;
-      cout << "UP = Aumenta Velocidad" << endl;
-      cout << "DOWN = Baja Velocidad" << endl;
-      // cout << "Demora: " << velocidad << endl;
       mostrar(dato);
-      retardo(velocidad);
+      mostrarLED(dato);
+      delay(velocidad);
       system("cls");
       dato = dato >> 1;
       printf("\n");
@@ -108,16 +113,12 @@ void autoFantastico(unsigned long int velocidad = 10000000) {
     }
     dato = 0x01;
     for (i = 0; i < 6; i++) {
-      cout << "ESC = Frena Ejecucion" << endl;
-      cout << "UP = Aumenta Velocidad" << endl;
-      cout << "DOWN = Baja Velocidad" << endl;
-      // cout << "Demora: " << velocidad << endl;
-      dato = dato << 1;
       mostrar(dato);
-      retardo(velocidad);
+      mostrarLED(dato);
+      delay(velocidad);
       system("cls");
+      dato = dato << 1;
       printf("\n");
-
       if (GetAsyncKeyState(VK_ESCAPE) & 0x0001) {
         return;
       }
@@ -126,10 +127,15 @@ void autoFantastico(unsigned long int velocidad = 10000000) {
 }
 
 int main() {
-  int opcion = 0;
+  // initscr();  // inicia la biblioteca ncurses
+  // echo();     // habilita la eco automatica de caracteres ingresados
+  // noecho();   // la deshabilita, la uso para cuando comience alguna rutina
+  // uso printw en vez de printf
+  int opcion = 0, exit = 1;
+  // pioInit();
   unsigned long int velocidad = 145000000;
 
-  ingresarContrasena();
+  // ingresarContrasena();
 
   do {
     menu();
@@ -137,7 +143,10 @@ int main() {
     switch (opcion) {
       case 1:
         system("cls");
-        autoFantastico(velocidad);
+        do {
+          autoFantastico(velocidad);
+        } while (exit);
+
         opcion = 0;
         break;
       case 2:
@@ -155,6 +164,8 @@ int main() {
     }
   } while (opcion != 0);
 
+  // endwin();  // Finalizar y cerrar la ventana ncurses
   return 0;
+
   system("Pause");
 }
