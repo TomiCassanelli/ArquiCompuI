@@ -1,20 +1,21 @@
-// #include <ncurses.h>
+#include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// #include <sys/ioctl.h>
-// #include <termios.h>
-// #include "EasyPIO.h"
+#include <sys/ioctl.h>
+#include <termios.h>
+
+#include "EasyPIO.h"
 
 // ncursed
 // EasyPIO.h maneja todo lo interno a la raspberry
 
 const char password[] = "12345";
 const char led[] = {14, 15, 18, 23, 24, 25, 8, 7};  // Puertos de los LEDS
-int DELAY = 100;
+int DELAY = 500;
 int salir;
 
-void mostrar(unsigned char);
+void mostrar(unsigned char b);
 void menu();
 void autoFantastico();
 void choque();
@@ -36,60 +37,88 @@ unsigned char patronTenis[] = {
     0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1,
 };
 
+// ---------------------------------------------------------------
+//                     FUNCIONES DE DELAY
+// ---------------------------------------------------------------
+
 // int tomadelay(int n) {
-//   if (n == 0) {
-//     DELAY += 4;
-//     if (DELAY > 44) {
-//       DELAY = 44;  // Límite superior de DELAY
-//     }
-//   } else if (n == 1) {
-//     DELAY -= 4;
-//     if (DELAY < 4) {
-//       DELAY = 4;  // Límite inferior de DELAY
+//   if (DELAY < 44) {
+//     if (n == 0) {
+//       DELAY = DELAY + 4;
+//       return DELAY;
 //     }
 //   }
+//   if (DELAY > 4)
+//     if (n == 1) {
+//       DELAY = DELAY - 4;
+//       return DELAY;
+//     }
 //   return DELAY;
 // }
 
 // int delayc(int a) {
-//   // initscr();
-//   // noecho();
-//   // cbreak();
+//   initscr();
+//   noecho();
+//   cbreak();
 //   int c;
-//   // keypad(stdscr, TRUE);
-//   // nodelay(stdscr, TRUE);
-//   /*c = getch();*/ c = getchar();
-
-//   // nocbreak();
-//   if (c == /*KEY_UP*/ 27) {
+//   keypad(stdscr, TRUE);
+//   nodelay(stdscr, TRUE);
+//   c = getch();
+//   nocbreak();
+//   if (c == KEY_UP) {
 //     a = tomadelay(1);
 //   }
-//   if (c == /*KEY_DOWN*/ 26) {
+//   if (c == KEY_DOWN) {
 //     a = tomadelay(0);
 //   }
 //   if (c == 102) {  // finaliza con f, cbreak no me deja con intro
-//     // echo();
-//     // endwin();
-//     salir = 0;
+//     echo();
+//     endwin();
+//     ejec = 0;
 //     menu();
 //   }
-//   // for (int j = 0; j < a; j++) {
-//   //   unsigned int i = 0x4fffff;  // raspberry 0x3fffff
-//   //   while (i) i--;
-//   // }
-//   // echo();
-//   // endwin();
+//   for (int j = 0; j < a; j++) {
+//     unsigned int i = 0x4fffff;  // raspberry 0x3fffff
+//     while (i) i--;
+//   }
+//   echo();
+//   endwin();
 //   return a;
 // }
 
-// void delay(unsigned long int a) {
-//   while (a) a--;
-// }
+int delayc(void) {
+  // timeout(0);
+  keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE);
+  int c = getch();
+
+  if (c != ERR) {
+    if (c == KEY_UP) {
+      DELAY -= 50;
+      if (DELAY < 50) {
+        DELAY = 50;
+        return 0;
+      }
+    } else if (c == KEY_DOWN) {
+      DELAY += 50;
+      if (DELAY > 2000) {
+        DELAY = 2000;
+        return 0;
+      }
+    }
+    return 1;
+  } else {
+    salir = 0;
+    return 0;
+  }
+}
 
 // ---------------------------------------------------------------
 //                FUNCION PARA MOSTRAR LED O CARACTER
 // ---------------------------------------------------------------
 void mostrar(unsigned char dato) {
+  initscr();
+
   for (int i = 7; i >= 0; --i) {
     char charConsola;
     int onOffLed;
@@ -102,24 +131,47 @@ void mostrar(unsigned char dato) {
       charConsola = '_';
       onOffLed = 1;
     }
-    printf("%c", charConsola);  // representa en la consola
-    // digitalWrite(led[i], onOffLed);  // representa en el led
+    printw("%c", charConsola);           // representa en la consola
+    /*digitalWrite(led[i], onOffLed);*/  // representa en el led
   }
-  printf("\r");
+  printw("\r");
+  fflush(stdout);
+  endwin();
 }
+
+// void mostrar(unsigned char b) {
+//   initscr();
+//   for (int i = 8; i > 0; i--) {
+//     if ((b & 1) == 1) {
+//       printw("*");
+//     } else
+//       printw("_");
+//     b = b >> 1;
+//   }
+//   printw("\r");
+//   fflush(stdout);
+//   endwin();
+// }
+
+// void mostrarLED(unsigned char b) {
+//   for (int i = 7; i >= 0; --i) {
+//     char tmp = (b & (1 << i)) ? '*' : '_';
+//     int onOffLed = (b & (1 << i)) ? 1 : 0;
+//     digitalWrite(led[i], onOffLed);
+//   }
+// }
 
 // ---------------------------------------------------------------
 //               SECUENCIA PARA EL AUTO FANTASTICO
 // ---------------------------------------------------------------
 void autoFantastico() {
-  unsigned long int velocidad = 0;  // Inicializar velocidad
   for (int i = 0; i < 8; i++) {
     mostrar(patronAutoFantastico[i]);
-    // DELAY = delayc(DELAY);
+    DELAY = delayc();
   }
   for (int i = 7; i != 0; i--) {
     mostrar(patronAutoFantastico[i]);
-    // DELAY = delayc(DELAY);
+    DELAY = delayc();
   }
 }
 
@@ -129,7 +181,7 @@ void autoFantastico() {
 void choque() {
   for (int i = 0; i < 8; i++) {
     mostrar(patronElChoque[i]);
-    // DELAY = delayc(DELAY);
+    DELAY = delayc();
   }
 }
 
@@ -139,7 +191,7 @@ void choque() {
 void tenis() {
   for (int i = 0; i < 13; i++) {
     mostrar(patronTenis[i]);
-    // DELAY = delayc(DELAY);
+    DELAY = delayc();
   }
 }
 
@@ -158,6 +210,37 @@ void menu() {
   printf("*   [0]- OPCION 0         *\n");
   printf("***************************\n");
   printf("\n");
+
+  salir = 1;
+  char caracter;
+
+  /*scanf("%d", &opcion);*/
+
+  char n = getchar();
+  initscr();
+  clear();
+  do {
+    switch (n) {
+      case '0':
+        exit(-1);
+      case '1':
+        printw("Auto fantastico");
+        printw("\nPresione f para salir\n");
+        do {
+          autoFantastico();
+        } while (salir);
+      case '2':
+        clear();
+        printw("El choque");
+        printw("\nPresione f para salir\n");
+        do {
+          choque();
+        } while (salir);
+
+      default:
+        break;
+    }
+  } while (TRUE);
 }
 
 // ---------------------------------------------------------------
@@ -165,53 +248,13 @@ void menu() {
 // ---------------------------------------------------------------
 int main() {
   // pioInit();
-  // for (int i = 0; i < 8; i++) {
-  // pinMode(led[i], OUTPUT);
-  // }
+  /*for (int i = 0; i < 8; i++) {
+  pinMode(led[i], OUTPUT);
+  }*/
 
-  int opcion = 0, salir = 1;
+  int salir = 1;
 
-  do {
-    menu();
-    scanf("%d", &opcion);
-
-    // initscr();
-    // clear();
-    switch (opcion) {
-      case 1:
-        // clear();
-        printf("Auto fantastico\n");
-        printf("Si apretas ESC, salis\n");
-        do {
-          autoFantastico();
-        } while (salir);
-        break;
-      case 2:
-        // clear();
-        printf("El choque\n");
-        printf("Si apretas ESC, salis\n");
-        do {
-          choque();
-        } while (salir);
-        break;
-      case 3:
-        // clear();
-        printf("Tenis\n");
-        printf("Si apretas ESC, salis\n");
-        do {
-          choque();
-        } while (salir);
-        break;
-
-      case 4:
-        /* code */
-        break;
-
-      default:
-        break;
-    }
-  } while (opcion != 0);
+  menu();
 
   return 0;
-  system("Pause");
 }
