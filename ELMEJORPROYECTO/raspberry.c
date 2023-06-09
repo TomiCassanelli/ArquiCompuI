@@ -32,7 +32,7 @@ unsigned char datosAuto[] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01,
 };
 
-unsigned char datosChoque[] = {
+unsigned char patronElChoque[] = {
     0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
 };
 
@@ -248,55 +248,55 @@ int delayc(int a) {
   return a;
 }
 
-int delayass(int a) {
-  initscr();
-  noecho();
-  cbreak();
-  int c;
-  keypad(stdscr, TRUE);
-  nodelay(stdscr, TRUE);
-  c = getch();
-  nocbreak();
-  if (c == KEY_UP) {
-    a = tomadelay(1);
-  }
-  if (c == KEY_DOWN) {
-    a = tomadelay(0);
-  }
-  if (c == 102) {  // finaliza con f, cbreak no me deja con intro
-    echo();
-    endwin();
-    ejec = 0;
-    menu();
-    return 0;
-  }
-  for (int j = 0; j < a; j++) {
-    unsigned int i = 0x4fffff;  // raspberry 0x3fffff
-    while (i) i--;
-  }
-  echo();
-  endwin();
-  return a;
-}
+// int delayass(int a) {
+//   initscr();
+//   noecho();
+//   cbreak();
+//   int c;
+//   keypad(stdscr, TRUE);
+//   nodelay(stdscr, TRUE);
+//   c = getch();
+//   nocbreak();
+//   if (c == KEY_UP) {
+//     a = tomadelay(1);
+//   }
+//   if (c == KEY_DOWN) {
+//     a = tomadelay(0);
+//   }
+//   if (c == 102) {  // finaliza con f, cbreak no me deja con intro
+//     echo();
+//     endwin();
+//     ejec = 0;
+//     menu();
+//     return 0;
+//   }
+//   for (int j = 0; j < a; j++) {
+//     unsigned int i = 0x4fffff;  // raspberry 0x3fffff
+//     while (i) i--;
+//   }
+//   echo();
+//   endwin();
+//   return a;
+// }
 
-void autoFantasticoAlg() {
-  output(1);
-  outputLED(1);
-  DELAY = delayc(DELAY);
-  int i = 2;
-  do {
-    output(i);
-    outputLED(i);
-    DELAY = delayc(DELAY);
-    i *= 2;
-  } while (i <= 64);
-  do {
-    output(i);
-    outputLED(i);
-    DELAY = delayc(DELAY);
-    i /= 2;
-  } while (i > 0);
-}
+// void autoFantasticoAlg() {
+//   output(1);
+//   outputLED(1);
+//   DELAY = delayc(DELAY);
+//   int i = 2;
+//   do {
+//     output(i);
+//     outputLED(i);
+//     DELAY = delayc(DELAY);
+//     i *= 2;
+//   } while (i <= 64);
+//   do {
+//     output(i);
+//     outputLED(i);
+//     DELAY = delayc(DELAY);
+//     i /= 2;
+//   } while (i > 0);
+// }
 
 void pool() {
   int i = 128;
@@ -329,8 +329,8 @@ void carrera() {
 }
 void choque() {
   for (int i = 0; i < 8; i++) {
-    output(datosChoque[i]);
-    outputLED(datosChoque[i]);
+    output(patronElChoque[i]);
+    outputLED(patronElChoque[i]);
     DELAY = delayc(DELAY);
   }
 }

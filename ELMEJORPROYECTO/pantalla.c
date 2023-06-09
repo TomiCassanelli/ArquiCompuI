@@ -35,7 +35,7 @@ unsigned char datosAuto[]= {
         0x01,
 };
 
-unsigned char datosChoque[] = {
+unsigned char patronElChoque[] = {
         0x81,
         0x42,
         0x24,
@@ -369,7 +369,7 @@ void carrera(){
 }
 void choque(){
     for(int i = 0; i < 8; i++){
-        output(datosChoque[i]);
+        output(patronElChoque[i]);
         DELAY = delayc(DELAY);
     }
 }
