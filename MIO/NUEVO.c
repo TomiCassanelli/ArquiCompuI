@@ -1,10 +1,10 @@
+// #include <sys/ioctl.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <termios.h>
-  
+
 #include "EasyPIO.h"
 
 // ncursed
@@ -21,6 +21,10 @@ void choque();
 void tenis();
 void repiqueteo();
 
+extern void secuenciaTenisDos(void);
+extern void secuenciaTenis(void);
+extern void secuenciaRepiqueteo(void);
+
 // ---------------------------------------------------------------
 //                 PATRONES PARA LAS SECUENCIAS
 // ---------------------------------------------------------------
@@ -32,10 +36,9 @@ unsigned char patronAutoFantastico[] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01,
 };
 
-unsigned char patronTenis[] = {
-    0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83,
-    0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1
-  
+unsigned char patronTenis[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83, 0x83,
+                               0x85, 0x89, 0x91, 0xA1, 0xC1
+
 };
 
 unsigned char patronRepiqueteo[] = {
@@ -49,7 +52,7 @@ unsigned char patronRepiqueteo[] = {
 // ---------------------------------------------------------------
 //                     FUNCIONES CONTRASENA
 // ---------------------------------------------------------------
-int passwordFn(){
+int passwordFn() {
   initscr();
   noecho();
   int error = 0;
@@ -77,13 +80,12 @@ int passwordFn(){
   endwin();
 
   return strcmp(password, ingreso);
-  }
-
+}
 
 // ---------------------------------------------------------------
 //                     FUNCIONES DE DELAY
 // ---------------------------------------------------------------
-int tomadelay(int n) {
+int corazonDelay(int n) {
   if (DELAY < 44) {
     if (n == 0) {
       DELAY = DELAY + 4;
@@ -98,7 +100,7 @@ int tomadelay(int n) {
   return DELAY;
 }
 
-int delayc(int a) {
+int retardo(int a) {
   initscr();
   noecho();
   cbreak();
@@ -108,10 +110,10 @@ int delayc(int a) {
   c = getch();
   nocbreak();
   if (c == KEY_UP) {
-    a = tomadelay(1);
+    a = corazonDelay(1);
   }
   if (c == KEY_DOWN) {
-    a = tomadelay(0);
+    a = corazonDelay(0);
   }
   if (c == 102) {  // finaliza con f, cbreak no me deja con intro
     echo();
@@ -147,7 +149,7 @@ void mostrar(unsigned char dato) {
       charConsola = '_';
       onOffLed = 0;
     }
-    printw("%c", charConsola);           // representa en la consola
+    printw("%c", charConsola);       // representa en la consola
     digitalWrite(led[i], onOffLed);  // representa en el led
   }
   printw("\r");
@@ -161,11 +163,11 @@ void mostrar(unsigned char dato) {
 void autoFantastico() {
   for (int i = 0; i < 8; i++) {
     mostrar(patronAutoFantastico[i]);
-    DELAY = delayc(DELAY);
+    DELAY = retardo(DELAY);
   }
   for (int i = 7; i != 0; i--) {
     mostrar(patronAutoFantastico[i]);
-    DELAY = delayc(DELAY);
+    DELAY = retardo(DELAY);
   }
 }
 
@@ -175,7 +177,7 @@ void autoFantastico() {
 void choque() {
   for (int i = 0; i < 8; i++) {
     mostrar(patronElChoque[i]);
-    DELAY = delayc(DELAY);
+    DELAY = retardo(DELAY);
   }
 }
 
@@ -185,7 +187,7 @@ void choque() {
 void tenis() {
   for (int i = 0; i < 12; i++) {
     mostrar(patronTenis[i]);
-    DELAY = delayc(DELAY);
+    DELAY = retardo(DELAY);
   }
 }
 
@@ -195,10 +197,9 @@ void tenis() {
 void repiqueteo() {
   for (int i = 0; i < 57; i++) {
     mostrar(patronRepiqueteo[i]);
-    DELAY = delayc(DELAY);
+    DELAY = retardo(DELAY);
   }
 }
-
 
 // ---------------------------------------------------------------
 //                             MENU
@@ -207,7 +208,7 @@ void menu() {
   clear();
   salir = 1;
 
-    char n;
+  char n;
   printf("\n");
   printf("    MENU DE OPCIONES\n");
   printf("***************************\n");
@@ -215,20 +216,19 @@ void menu() {
   printf("*   [2]- El Choque        *\n");
   printf("*   [3]- Tenis            *\n");
   printf("*   [4]- Repiqueteo       *\n");
-  printf("*   [5]- OPCION 5         *\n");
-  printf("*   [0]- OPCION 0         *\n");
+  printf("*   [0]- Salir            *\n");
   printf("***************************\n");
   printf("\n");
-  do {   
-  n = getchar();
-  initscr();
-  clear();
+  do {
+    n = getchar();
+    initscr();
+    clear();
 
     switch (n) {
       case '0':
         exit(-1);
       case '1':
-      clear();
+        clear();
         printw("Auto fantastico");
         printw("\nPresione f para salir\n");
         do {
@@ -255,6 +255,20 @@ void menu() {
         do {
           repiqueteo();
         } while (salir);
+      case '5':
+        clear();
+        printw("Tenis ASSEMBLER");
+        printw("\nPresione f para salir\n");
+        do {
+          secuenciaTenis();
+        } while (salir);
+      case '6':
+        clear();
+        printw("Repiqueteo ASSEMBLER");
+        printw("\nPresione f para salir\n");
+        do {
+          secuenciaRepiqueteo();
+        } while (salir);
       default:
         break;
     }
@@ -265,10 +279,10 @@ void menu() {
 //                       FUNCION PRINCIPAL
 // ---------------------------------------------------------------
 int main() {
-  pioInit(); // inicia EasyPIO
-    initscr();  // Inicia ncurses
+  pioInit();  // inicia EasyPIO
+  initscr();  // Inicia ncurses
   for (int i = 0; i < 8; i++) {
-  pinMode(led[i], OUTPUT);
+    pinMode(led[i], OUTPUT);
   }
 
   int salir = 1;
@@ -281,8 +295,6 @@ int main() {
   } else {
     printw("\nDemasiados intentos fallidos. Acceso denegado.\n");
   }
-
-
 
   return 0;
 }
