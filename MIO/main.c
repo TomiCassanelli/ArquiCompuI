@@ -13,17 +13,19 @@ const char password[] = "12345";  // Contraseña preestablecida
 int DELAY = 50;
 const int DELAYSUPERIOR = 100;
 const int DELAYINFERIOR = 0;
+const int CAMBIODELAY = 5;
 
 void mostrar(unsigned char b);
 void menu();
 void autoFantastico(int* delay);
 void choque(int* delay);
-void tenis(int* delay);
+void carrera(int* delay);
+void pingPong(int* delay);
 void repiqueteo(int* delay);
 
-// extern void secuenciaTenisDos(void);
-// extern void secuenciaTenis(void);
-// extern void secuenciaRepiqueteo(void);
+// extern void secuenciaPingPong(void);
+// extern void secuenciaPingPong(int* delay);
+// extern void secuenciaRepiqueteo(int* delay);
 
 // ---------------------------------------------------------------
 //                 PATRONES PARA LAS SECUENCIAS
@@ -55,7 +57,12 @@ unsigned char patronElChoque[] = {
 // 01000010
 // 10000001
 
-unsigned char patronTenis[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83,
+unsigned char patronCarrera[] = {
+    0x80, 0x80, 0x40, 0x40, 0x20, 0x20, 0x10, 0x10,
+    0x88, 0x48, 0x24, 0x14, 0x0A, 0x06, 0x03, 0x01,
+};
+
+unsigned char patronPingPong[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83,
                                0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1};
 // 11000001
 // 10100001
@@ -131,9 +138,9 @@ int passwordFn() {
 //                     FUNCIONES DE DELAY
 // ---------------------------------------------------------------
 
-int ajustarRetardo(int n, int cambiaDelay) {
+int ajustarDelay(int n, int cambiaDelay) {
   if (cambiaDelay < DELAYSUPERIOR && n == 0) {
-    cambiaDelay += 5;
+    cambiaDelay += CAMBIODELAY;
     if (cambiaDelay > DELAYSUPERIOR) {
       cambiaDelay = DELAYSUPERIOR;  // Ajustar al límite superior
     }
@@ -141,7 +148,7 @@ int ajustarRetardo(int n, int cambiaDelay) {
   }
 
   if (cambiaDelay > DELAYINFERIOR && n == 1) {
-    cambiaDelay -= 5;
+    cambiaDelay -= CAMBIODELAY;
     if (cambiaDelay < DELAYINFERIOR) {
       cambiaDelay = DELAYINFERIOR;  // Ajustar al límite inferior
     }
@@ -166,12 +173,12 @@ int controles(int numDelay) {
   nocbreak();
 
   switch (tecla) {
-    case KEY_UP:
-      numDelay = ajustarRetardo(1, numDelay);
+    case KEY_UP: // ↑ key
+      numDelay = ajustarDelay(1, numDelay);
       break;
 
-    case KEY_DOWN:
-      numDelay = ajustarRetardo(0, numDelay);
+    case KEY_DOWN: // ↓ key
+      numDelay = ajustarDelay(0, numDelay);
       break;
 
     case 27:  // ESC key
@@ -235,11 +242,21 @@ void choque(int* delay) {
 }
 
 // ---------------------------------------------------------------
+//                   SECUENCIA PARA LA CARRERA
+// ---------------------------------------------------------------
+void carrera(int* delay) {
+  for (int i = 0; i < 16; i++) {
+    mostrar(patronCarrera[i]);
+    *delay = controles(*delay);
+  }
+}
+
+// ---------------------------------------------------------------
 //                       SECUENCIA TENIS
 // ---------------------------------------------------------------
-void tenis(int* delay) {
+void pingPong(int* delay) {
   for (int i = 0; i < 12; i++) {
-    mostrar(patronTenis[i]);
+    mostrar(patronPingPong[i]);
     *delay = controles(*delay);
   }
 }
@@ -258,7 +275,6 @@ void repiqueteo(int* delay) {
 //                             MENU
 // ---------------------------------------------------------------
 void menu() {
-  // clear();
   int delay = DELAY;
   int salir = 1;
   noecho();
@@ -273,8 +289,9 @@ void menu() {
     printw("***************************\n");
     printw("*   [1]- Auto Fantastico  *\n");
     printw("*   [2]- El Choque        *\n");
-    printw("*   [3]- Tenis            *\n");
-    printw("*   [4]- Repiqueteo       *\n");
+    printw("*   [3]- Carrera          *\n");
+    printw("*   [4]- Ping Pong        *\n");
+    printw("*   [5]- Repiqueteo       *\n");
     printw("*   [0]- Salir            *\n");
     printw("***************************\n");
     printw(" ESC <- Finaliza Secuencia\n");
@@ -287,7 +304,6 @@ void menu() {
       case '0':
         exit(-1);
       case '1':
-
         printw("***************************\n");
         printw("*     AUTO FANTASTICO     *\n");
         printw("***************************\n");
@@ -296,7 +312,6 @@ void menu() {
         } while (salir);
         break;
       case '2':
-
         printw("***************************\n");
         printw("*          CHOQUE         *\n");
         printw("***************************\n");
@@ -306,14 +321,22 @@ void menu() {
         break;
       case '3':
         printw("***************************\n");
-        printw("*          TENIS          *\n");
+        printw("*         CARRERA         *\n");
         printw("***************************\n");
         do {
-          tenis(&delay);
+          carrera(&delay);
+        } while (salir);
+        break;
+      case '4':
+        printw("***************************\n");
+        printw("*        PING PONG        *\n");
+        printw("***************************\n");
+        do {
+          pingPong(&delay);
         } while (salir);
 
         break;
-      case '4':
+      case '5':
         printw("***************************\n");
         printw("*        REPIQUETEO       *\n");
         printw("***************************\n");
@@ -322,22 +345,23 @@ void menu() {
         } while (salir);
 
         break;
-        /*case '5':
+      case '6':
+        printw("***************************\n");
+        printw("*   PING PONG ASSEMBLER   *\n");
+        printw("***************************\n");
+        // do {
+        // secuenciaPingPong(&delay);
+        // } while (salir);
 
-          printw("Tenis ASSEMBLER\n");
-          printw("Para finalizar la secuencia -> ESC\n");
-          do {
-            secuenciaTenis();
-          } while (salir);
+        break;
+      case '7':
+        printw("***************************\n");
+        printw("*   REPIQUETEO ASSEMBLER  *\n");
+        printw("***************************\n");
+        // do {
+        // secuenciaRepiqueteo(&delay);
+        // } while (salir);
 
-        case '6':
-
-          printw("Repiqueteo ASSEMBLER\n");
-          printw("Para finalizar la secuencia -> ESC\n");
-          do {
-            secuenciaRepiqueteo();
-          } while (salir);
-        */
       default:
         break;
     }
