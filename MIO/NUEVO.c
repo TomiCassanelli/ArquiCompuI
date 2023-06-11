@@ -1,9 +1,7 @@
-// #include <sys/ioctl.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "EasyPIO.h"
 
@@ -11,35 +9,65 @@
 // EasyPIO.h maneja todo lo interno a la raspberry
 
 const char led[] = {14, 15, 18, 23, 24, 25, 8, 7};  // Puertos de los LEDS
-int DELAY = 10;
-int salir;
+const char password[] = "12345";  // Contraseña preestablecida
+int DELAY = 50;
+const int DELAYSUPERIOR = 100;
+const int DELAYINFERIOR = 0;
 
 void mostrar(unsigned char b);
 void menu();
-void autoFantastico();
-void choque();
-void tenis();
-void repiqueteo();
+void autoFantastico(int* delay);
+void choque(int* delay);
+void tenis(int* delay);
+void repiqueteo(int* delay);
 
-extern void secuenciaTenisDos(void);
-extern void secuenciaTenis(void);
-extern void secuenciaRepiqueteo(void);
+// extern void secuenciaTenisDos(void);
+// extern void secuenciaTenis(void);
+// extern void secuenciaRepiqueteo(void);
 
 // ---------------------------------------------------------------
 //                 PATRONES PARA LAS SECUENCIAS
 // ---------------------------------------------------------------
-unsigned char patronElChoque[] = {
-    0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
-};
+// En estos patrones se representan los numeros binarios en hexadecimales
+// generando asi una secuencia
 
 unsigned char patronAutoFantastico[] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01,
 };
+// 10000000
+// 01000000
+// 00100000
+// 00010000
+// 00001000
+// 00000100
+// 00000010
+// 00000001
 
-unsigned char patronTenis[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83, 0x83,
-                               0x85, 0x89, 0x91, 0xA1, 0xC1
-
+unsigned char patronElChoque[] = {
+    0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
 };
+// 10000001
+// 01000010
+// 00100100
+// 00011000
+// 00011000
+// 00100100
+// 01000010
+// 10000001
+
+unsigned char patronTenis[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83,
+                               0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1};
+// 11000001
+// 10100001
+// 10010001
+// 10001001
+// 10000101
+// 10000011
+// 10000101
+// 10001001
+// 10010001
+// 10100001
+// 11000001
 
 unsigned char patronRepiqueteo[] = {
     0x80, 0x40, 0x80, 0x40, 0x20, 0x40, 0x80, 0x40, 0x20, 0x10, 0x20, 0x40,
@@ -48,156 +76,181 @@ unsigned char patronRepiqueteo[] = {
     0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x40, 0x20, 0x10, 0x08, 0x04,
     0x02, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
 };
+// 10000000
+// 01000000
+// 10000000
+// 01000000
+// 00100000
+// 01000000
+// 10000000
+// 01000000
+// 00100000
+// 00010000
+// 00100000
+// 01000000
+// 10000000
+// 01000000
+// 00100000
+// 00010000
+// 00001000
 
 // ---------------------------------------------------------------
 //                     FUNCIONES CONTRASENA
 // ---------------------------------------------------------------
+// En este caso implementamos una contraseña ya establecida constante, y se
+// utiliza la funcion noecho para no mostrar los numeros que se muestran,
+// entonces con solo indicar con getch que se uso esa tecla inserta el *
+
 int passwordFn() {
-  initscr();
   noecho();
   int error = 0;
-  char c;
-  char password[] = "12345";  // Contraseña preestablecida
-  char ingreso[6];  // Aumentamos el tamaño para incluir el carácter nulo
+  char tecla;
+  char passIngresada[5];
 
   do {
     printw("Ingrese su contraseña de 5 dígitos:\n");
 
     for (int i = 0; i < 5; i++) {
-      c = getch();
-      ingreso[i] = c;
+      tecla = getch();
+      passIngresada[i] = tecla;
       printw("*");
     }
-    ingreso[5] = '\0';  // Agregamos el carácter nulo al final de la cadena
 
-    if (strcmp(password, ingreso) != 0) {
+    if (strcmp(password, passIngresada) != 0) {
       error++;
       printw("\nContraseña incorrecta. Intentos restantes: %d\n", 3 - error);
     }
-  } while (error < 3 && strcmp(password, ingreso) != 0);
+  } while (error < 3 && strcmp(password, passIngresada) != 0);
 
   echo();
-  endwin();
 
-  return strcmp(password, ingreso);
+  return strcmp(password, passIngresada);
 }
 
 // ---------------------------------------------------------------
 //                     FUNCIONES DE DELAY
 // ---------------------------------------------------------------
-int corazonDelay(int n) {
-  if (DELAY < 44) {
-    if (n == 0) {
-      DELAY = DELAY + 4;
-      return DELAY;
+
+int ajustarRetardo(int n, int cambiaDelay) {
+  if (cambiaDelay < DELAYSUPERIOR && n == 0) {
+    cambiaDelay += 5;
+    if (cambiaDelay > DELAYSUPERIOR) {
+      cambiaDelay = DELAYSUPERIOR;  // Ajustar al límite superior
     }
+    return cambiaDelay;
   }
-  if (DELAY > 4)
-    if (n == 1) {
-      DELAY = DELAY - 4;
-      return DELAY;
+
+  if (cambiaDelay > DELAYINFERIOR && n == 1) {
+    cambiaDelay -= 5;
+    if (cambiaDelay < DELAYINFERIOR) {
+      cambiaDelay = DELAYINFERIOR;  // Ajustar al límite inferior
     }
-  return DELAY;
+    return cambiaDelay;
+  }
+
+  return cambiaDelay;
 }
 
-int retardo(int a) {
-  initscr();
+int controles(int numDelay) {
+  int salir = 1;
   noecho();
   cbreak();
-  int c;
+
+  int tecla;
   keypad(stdscr, TRUE);
-  nodelay(stdscr, TRUE);
-  c = getch();
+
+  timeout(15);
+
+  tecla = getch();
+
   nocbreak();
-  if (c == KEY_UP) {
-    a = corazonDelay(1);
+
+  switch (tecla) {
+    case KEY_UP:
+      numDelay = ajustarRetardo(1, numDelay);
+      break;
+
+    case KEY_DOWN:
+      numDelay = ajustarRetardo(0, numDelay);
+      break;
+
+    case 27:  // ESC key
+      echo();
+      salir = 0;
+      menu();
+      break;
   }
-  if (c == KEY_DOWN) {
-    a = corazonDelay(0);
+
+  // pausa la ejecución por 15 milisegundos, controla la velocidad de respuesta
+  for (int i = 0; i < numDelay; i++) {
+    napms(10);
   }
-  if (c == 102) {  // finaliza con f, cbreak no me deja con intro
-    echo();
-    endwin();
-    salir = 0;
-    clear();
-    menu();
-  }
-  for (int j = 0; j < a; j++) {
-    unsigned int i = 0x4fffff;  // raspberry 0x3fffff
-    while (i) i--;
-  }
+
   echo();
-  endwin();
-  return a;
+
+  return numDelay;
 }
 
 // ---------------------------------------------------------------
 //                FUNCION PARA MOSTRAR LED O CARACTER
 // ---------------------------------------------------------------
-void mostrar(unsigned char dato) {
-  initscr();
-
+void mostrar(unsigned char bit) {
   for (int i = 7; i >= 0; --i) {
-    char charConsola;
-    int onOffLed;
+    char charConsole;
 
-    if (dato & (1 << i)) {
-      charConsola = '*';
-      onOffLed = 1;
-
+    if (bit & (1 << i)) {
+      charConsole = '*';
     } else {
-      charConsola = '_';
-      onOffLed = 0;
+      charConsole = '_';
     }
-    printw("%c", charConsola);       // representa en la consola
-    digitalWrite(led[i], onOffLed);  // representa en el led
+
+    printw("%c", charConsole);                 // representa en la consola
+    digitalWrite(led[i], charConsole == '*');  // representa en los leds
   }
   printw("\r");
-  fflush(stdout);
-  endwin();
 }
 
 // ---------------------------------------------------------------
 //               SECUENCIA PARA EL AUTO FANTASTICO
 // ---------------------------------------------------------------
-void autoFantastico() {
+void autoFantastico(int* delay) {
   for (int i = 0; i < 8; i++) {
     mostrar(patronAutoFantastico[i]);
-    DELAY = retardo(DELAY);
+    *delay = controles(*delay);
   }
   for (int i = 7; i != 0; i--) {
     mostrar(patronAutoFantastico[i]);
-    DELAY = retardo(DELAY);
+    *delay = controles(*delay);
   }
 }
 
 // ---------------------------------------------------------------
 //                    SECUENCIA PARA EL CHOQUE
 // ---------------------------------------------------------------
-void choque() {
+void choque(int* delay) {
   for (int i = 0; i < 8; i++) {
     mostrar(patronElChoque[i]);
-    DELAY = retardo(DELAY);
+    *delay = controles(*delay);
   }
 }
 
 // ---------------------------------------------------------------
 //                       SECUENCIA TENIS
 // ---------------------------------------------------------------
-void tenis() {
+void tenis(int* delay) {
   for (int i = 0; i < 12; i++) {
     mostrar(patronTenis[i]);
-    DELAY = retardo(DELAY);
+    *delay = controles(*delay);
   }
 }
 
 // ---------------------------------------------------------------
 //                     SECUENCIA REPIQUETEO
 // ---------------------------------------------------------------
-void repiqueteo() {
+void repiqueteo(int* delay) {
   for (int i = 0; i < 57; i++) {
     mostrar(patronRepiqueteo[i]);
-    DELAY = retardo(DELAY);
+    *delay = controles(*delay);
   }
 }
 
@@ -205,73 +258,90 @@ void repiqueteo() {
 //                             MENU
 // ---------------------------------------------------------------
 void menu() {
+  // clear();
+  int delay = DELAY;
+  int salir = 1;
+  noecho();
+
+  char option;
+  refresh();
   clear();
-  salir = 1;
 
-  char n;
-  printf("\n");
-  printf("    MENU DE OPCIONES\n");
-  printf("***************************\n");
-  printf("*   [1]- Auto Fantastico  *\n");
-  printf("*   [2]- El Choque        *\n");
-  printf("*   [3]- Tenis            *\n");
-  printf("*   [4]- Repiqueteo       *\n");
-  printf("*   [0]- Salir            *\n");
-  printf("***************************\n");
-  printf("\n");
   do {
-    n = getchar();
-    initscr();
-    clear();
+    printw("\n");
+    printw("      MENU DE OPCIONES\n");
+    printw("***************************\n");
+    printw("*   [1]- Auto Fantastico  *\n");
+    printw("*   [2]- El Choque        *\n");
+    printw("*   [3]- Tenis            *\n");
+    printw("*   [4]- Repiqueteo       *\n");
+    printw("*   [0]- Salir            *\n");
+    printw("***************************\n");
+    printw(" ESC <- Finaliza Secuencia\n");
+    printw("\n");
+    printw("\n");
+    printw("\n");
+    option = getch();
 
-    switch (n) {
+    switch (option) {
       case '0':
         exit(-1);
       case '1':
-        clear();
-        printw("Auto fantastico");
-        printw("\nPresione f para salir\n");
+
+        printw("***************************\n");
+        printw("*     AUTO FANTASTICO     *\n");
+        printw("***************************\n");
         do {
-          autoFantastico();
+          autoFantastico(&delay);
         } while (salir);
+        break;
       case '2':
-        clear();
-        printw("El choque");
-        printw("\nPresione f para salir\n");
+
+        printw("***************************\n");
+        printw("*          CHOQUE         *\n");
+        printw("***************************\n");
         do {
-          choque();
+          choque(&delay);
         } while (salir);
+        break;
       case '3':
-        clear();
-        printw("Tenis");
-        printw("\nPresione f para salir\n");
+        printw("***************************\n");
+        printw("*          TENIS          *\n");
+        printw("***************************\n");
         do {
-          tenis();
+          tenis(&delay);
         } while (salir);
+
+        break;
       case '4':
-        clear();
-        printw("Repiqueteo");
-        printw("\nPresione f para salir\n");
+        printw("***************************\n");
+        printw("*        REPIQUETEO       *\n");
+        printw("***************************\n");
         do {
-          repiqueteo();
+          repiqueteo(&delay);
         } while (salir);
-      case '5':
-        clear();
-        printw("Tenis ASSEMBLER");
-        printw("\nPresione f para salir\n");
-        do {
-          secuenciaTenis();
-        } while (salir);
-      case '6':
-        clear();
-        printw("Repiqueteo ASSEMBLER");
-        printw("\nPresione f para salir\n");
-        do {
-          secuenciaRepiqueteo();
-        } while (salir);
+
+        break;
+        /*case '5':
+
+          printw("Tenis ASSEMBLER\n");
+          printw("Para finalizar la secuencia -> ESC\n");
+          do {
+            secuenciaTenis();
+          } while (salir);
+
+        case '6':
+
+          printw("Repiqueteo ASSEMBLER\n");
+          printw("Para finalizar la secuencia -> ESC\n");
+          do {
+            secuenciaRepiqueteo();
+          } while (salir);
+        */
       default:
         break;
     }
+    clear();
   } while (TRUE);
 }
 
@@ -281,20 +351,23 @@ void menu() {
 int main() {
   pioInit();  // inicia EasyPIO
   initscr();  // Inicia ncurses
+  clear();
   for (int i = 0; i < 8; i++) {
     pinMode(led[i], OUTPUT);
   }
 
   int salir = 1;
+  int login = passwordFn();
 
-  int resultado = passwordFn();
-  if (resultado == 0) {
+  if (login == 0) {
     printw("\nContraseña correcta. Acceso concedido.\n");
     clear();  // Actualizar la pantalla
     menu();
   } else {
     printw("\nDemasiados intentos fallidos. Acceso denegado.\n");
   }
+
+  endwin();
 
   return 0;
 }
