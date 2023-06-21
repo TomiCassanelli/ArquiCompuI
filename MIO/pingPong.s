@@ -1,29 +1,32 @@
-.global secuenciaTenis
+.global secuenciaPingPong
 
 .extern mostrar
 .extern controles
 
-secuenciaTenis
-    STMFD SP!,{R4, R5, R6, LR}
+secuenciaPingPong:
+    STMFD SP!, {R4, R5, R6, LR}
     MOV R4, #0
     MOV R5, #12
 
-loop
-    LDR R6, =patronTenis
-    LDRB R6, [R6, R4]
+loop:
+    LDR R6, =patronPingPong @ Le carga a R6 el arreglo patron
+    ADD R6, R6, R4  @ Realizar la suma entre R6 y R4 para obtener la dirección correcta
+    LDRB R6, [R6]
     MOV R0, R6
     BL mostrar
-    MOV R0, R5
     BL controles
-    MOV R5, R0
-    CMP R5, #0
+    SUB R5, R5, #1  @ Restar 1 a R5 en cada iteración
+    CMP R5, #0     @ Verificar si R5 ha llegado a 0
     BEQ exit
-    BNE loop
+    ADD R4, R4, #1  @ Incrementar R4 para el próximo byte
+    B loop
 
-exit
-   LDMFD SP!,{R4, R5, R6, PC}
+exit:
+    MOV R4, #0       @ Reiniciar R4 a 0 y R5 a 0 para comenzar desde el primer byte de la secuencia
+    MOV R5, #12
+    B loop           @ Saltar al inicio del bucle
 
-.data patronTenis
+patronPingPong:
     .byte 0xC1
     .byte 0xA1
     .byte 0x91
@@ -36,18 +39,3 @@ exit
     .byte 0x91
     .byte 0xA1
     .byte 0xC1
-    
-/*
-gcc main.c -o main -lncurses 
-gcc -g tenis.s -o prueba
-
-gcc main.o prueba.o -lncurses -o programa
-
--g
--o es para generar con el nombre prueba1
-
-
-debugger: ddd nombre.s, pongo breakpoints en main y done
-
-*/
-

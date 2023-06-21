@@ -3,28 +3,29 @@
 .extern mostrar
 .extern controles
 
-
 secuenciaRepiqueteo:
-    PUSH {R4-R6, LR}
+    STMFD SP!, {R4, R5, R6, LR}
     MOV R4, #0
     MOV R5, #57
 
 loop:
-    LDRB R6, =patronRepiqueteo
-    LDRB R6, [R6,R4]
+    LDR R6, =patronRepiqueteo
+    ADD R6, R6, R4  @ Realizar la suma entre R6 y R4 para obtener la dirección correcta
+    LDRB R6, [R6]
     MOV R0, R6
     BL mostrar
-    MOV R0, R5
     BL controles
-    MOV R5, R0
-    CMP R5, #0
+    SUB R5, R5, #1  @ Restar 1 a R5 en cada iteración
+    CMP R5, #0     @ Verificar si R5 ha llegado a 0
     BEQ exit
-    BNE loop
+    ADD R4, R4, #1  @ Incrementar R4 para el próximo byte
+    B loop
 
 exit:
-    POP {R4-R6, PC}
+    MOV R4, #0       @ Reiniciar R4 a 0 y R5 a 0 para comenzar desde el primer byte de la secuencia
+    MOV R5, #57
+    B loop           @ Saltar al inicio del bucle
 
-.data 
 patronRepiqueteo:
     .byte 0x80
     .byte 0x40
@@ -83,17 +84,5 @@ patronRepiqueteo:
     .byte 0x20
     .byte 0x40
     .byte 0x80
-.end
 
-/*
-gcc main.c -lncurses -o main
-gcc -g carrera2.s -o prueba1
-
--g
--o es para generar con el nombre prueba1
-
-
-debugger: ddd nombre.s, pongo breakpoints en main y done
-
-*/
 

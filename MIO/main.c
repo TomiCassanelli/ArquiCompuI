@@ -10,7 +10,7 @@
 
 const char led[] = {14, 15, 18, 23, 24, 25, 8, 7};  // Puertos de los LEDS
 const char password[] = "12345";  // Contraseña preestablecida
-int DELAY = 50;
+const int DELAY = 50;
 const int DELAYSUPERIOR = 100;
 const int DELAYINFERIOR = 0;
 const int CAMBIODELAY = 5;
@@ -23,7 +23,6 @@ void carrera(int* delay);
 void pingPong(int* delay);
 void repiqueteo(int* delay);
 
-// extern void secuenciaPingPong(void);
 // extern void secuenciaPingPong(int* delay);
 // extern void secuenciaRepiqueteo(int* delay);
 
@@ -61,9 +60,25 @@ unsigned char patronCarrera[] = {
     0x80, 0x80, 0x40, 0x40, 0x20, 0x20, 0x10, 0x10,
     0x88, 0x48, 0x24, 0x14, 0x0A, 0x06, 0x03, 0x01,
 };
+// 10000000
+// 10000000
+// 01000000
+// 01000000
+// 00100000
+// 00100000
+// 00010000
+// 00010000
+// 10001000
+// 01001000
+// 00100100
+// 00010100
+// 00001010
+// 00000110
+// 00000011
+// 00000001
 
 unsigned char patronPingPong[] = {0xC1, 0xA1, 0x91, 0x89, 0x85, 0x83,
-                               0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1};
+                                  0x83, 0x85, 0x89, 0x91, 0xA1, 0xC1};
 // 11000001
 // 10100001
 // 10010001
@@ -160,11 +175,12 @@ int ajustarDelay(int n, int cambiaDelay) {
 
 int controles(int numDelay) {
   int salir = 1;
-  noecho();
-  cbreak();
+  noecho();  // no aparecen las teclas que toco
+  cbreak();  // no tengo que tocar el enter para que acepte
 
   int tecla;
   keypad(stdscr, TRUE);
+  nodelay(stdscr, TRUE);
 
   timeout(15);
 
@@ -173,11 +189,11 @@ int controles(int numDelay) {
   nocbreak();
 
   switch (tecla) {
-    case KEY_UP: // ↑ key
+    case KEY_UP:  // ↑ key
       numDelay = ajustarDelay(1, numDelay);
       break;
 
-    case KEY_DOWN: // ↓ key
+    case KEY_DOWN:  // ↓ key
       numDelay = ajustarDelay(0, numDelay);
       break;
 
@@ -185,12 +201,18 @@ int controles(int numDelay) {
       echo();
       salir = 0;
       menu();
+      return 0;
       break;
   }
 
   // pausa la ejecución por 15 milisegundos, controla la velocidad de respuesta
-  for (int i = 0; i < numDelay; i++) {
-    napms(10);
+  // for (int i = 0; i < numDelay; i++) {
+  //   napms(10);
+  // }
+
+  for (int j = 0; j < numDelay; j++) {
+    unsigned int i = 0x4fffff;  // raspberry 0x3fffff
+    while (i) i--;
   }
 
   echo();
@@ -204,17 +226,21 @@ int controles(int numDelay) {
 void mostrar(unsigned char bit) {
   for (int i = 7; i >= 0; --i) {
     char charConsole;
+    int estadoLed;
 
     if (bit & (1 << i)) {
       charConsole = '*';
+      estadoLed = 1;
     } else {
       charConsole = '_';
+      estadoLed = 0;
     }
 
-    printw("%c", charConsole);                 // representa en la consola
-    digitalWrite(led[i], charConsole == '*');  // representa en los leds
+    printw("%c", charConsole);        // representa en la consola
+    digitalWrite(led[i], estadoLed);  // representa en los leds
   }
   printw("\r");
+  fflush(stdout);
 }
 
 // ---------------------------------------------------------------
@@ -277,96 +303,114 @@ void repiqueteo(int* delay) {
 void menu() {
   int delay = DELAY;
   int salir = 1;
-  noecho();
 
-  char option;
-  refresh();
+  noecho();  // Desactivar la eco de entrada
+  cbreak();  // Desactivar el búfer de línea
+
+  int input;
   clear();
 
-  do {
-    printw("\n");
-    printw("      MENU DE OPCIONES\n");
-    printw("***************************\n");
-    printw("*   [1]- Auto Fantastico  *\n");
-    printw("*   [2]- El Choque        *\n");
-    printw("*   [3]- Carrera          *\n");
-    printw("*   [4]- Ping Pong        *\n");
-    printw("*   [5]- Repiqueteo       *\n");
-    printw("*   [0]- Salir            *\n");
-    printw("***************************\n");
-    printw(" ESC <- Finaliza Secuencia\n");
-    printw("\n");
-    printw("\n");
-    printw("\n");
-    option = getch();
+  printw("\n");
+  printw("      MENU DE OPCIONES\n");
+  printw("***************************\n");
+  printw("*   [1]- Auto Fantastico  *\n");
+  printw("*   [2]- El Choque        *\n");
+  printw("*   [3]- Carrera          *\n");
+  printw("*   [4]- Ping Pong        *\n");
+  printw("*   [5]- Repiqueteo       *\n");
+  printw("*   [6]- Ping Pong ASM    *\n");
+  printw("*   [7]- Repiqueteo ASM   *\n");
+  printw("*   [0]- Salir            *\n");
+  printw("***************************\n");
+  printw(" ESC <- Finaliza Secuencia\n");
+  printw("\n");
+  printw("\n");
+  printw("\n");
 
-    switch (option) {
+  refresh();
+
+  do {
+    input = getch();
+
+    switch (input) {
       case '0':
         exit(-1);
+        break;
       case '1':
+        clear();
         printw("***************************\n");
         printw("*     AUTO FANTASTICO     *\n");
         printw("***************************\n");
+        refresh();
         do {
           autoFantastico(&delay);
         } while (salir);
         break;
       case '2':
+        clear();
         printw("***************************\n");
         printw("*          CHOQUE         *\n");
         printw("***************************\n");
+        refresh();
         do {
           choque(&delay);
         } while (salir);
         break;
       case '3':
+        clear();
         printw("***************************\n");
         printw("*         CARRERA         *\n");
         printw("***************************\n");
+        refresh();
         do {
           carrera(&delay);
         } while (salir);
         break;
       case '4':
+        clear();
         printw("***************************\n");
         printw("*        PING PONG        *\n");
         printw("***************************\n");
+        refresh();
         do {
           pingPong(&delay);
         } while (salir);
-
         break;
       case '5':
+        clear();
         printw("***************************\n");
         printw("*        REPIQUETEO       *\n");
         printw("***************************\n");
+        refresh();
         do {
           repiqueteo(&delay);
         } while (salir);
-
         break;
-      case '6':
+      /*case '6':
+        clear();
         printw("***************************\n");
         printw("*   PING PONG ASSEMBLER   *\n");
         printw("***************************\n");
-        // do {
-        // secuenciaPingPong(&delay);
-        // } while (salir);
-
+        refresh();
+        do {
+          secuenciaPingPong(&delay);
+        } while (salir);
         break;
       case '7':
+        clear();
         printw("***************************\n");
         printw("*   REPIQUETEO ASSEMBLER  *\n");
         printw("***************************\n");
-        // do {
-        // secuenciaRepiqueteo(&delay);
-        // } while (salir);
-
+        refresh();
+        do {
+          secuenciaRepiqueteo(&delay);
+        } while (salir);
+        break;*/
       default:
         break;
     }
-    clear();
-  } while (TRUE);
+
+  } while (salir);
 }
 
 // ---------------------------------------------------------------
@@ -381,15 +425,15 @@ int main() {
   }
 
   int salir = 1;
-  int login = passwordFn();
+  // int login = passwordFn();
 
-  if (login == 0) {
-    printw("\nContraseña correcta. Acceso concedido.\n");
-    clear();  // Actualizar la pantalla
-    menu();
-  } else {
-    printw("\nDemasiados intentos fallidos. Acceso denegado.\n");
-  }
+  // if (login == 0) {
+  // printw("\nContraseña correcta. Acceso concedido.\n");
+  // clear();  // Actualizar la pantalla
+  menu();
+  // } else {
+  // printw("\nDemasiados intentos fallidos. Acceso denegado.\n");
+  // }
 
   endwin();
 
