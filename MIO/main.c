@@ -3,25 +3,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "EasyPIO.h"
+// #include "EasyPIO.h"
+#include "EasyPIOmodificado.h"
 
 // ncursed
 // EasyPIO.h maneja todo lo interno a la raspberry
 
 const char led[] = {14, 15, 18, 23, 24, 25, 8, 7};  // Puertos de los LEDS
 const char password[] = "12345";  // Contraseña preestablecida
-const int DELAY = 50;
+int DELAYAUTO = 50;
+int DELAYCHOQUE = 50;
+int DELAYCARRERA = 50;
+int DELAYPINGPONG = 50;
+int DELAYREPIQUETEO = 50;
+
 const int DELAYSUPERIOR = 100;
 const int DELAYINFERIOR = 0;
-const int CAMBIODELAY = 5;
+const int CAMBIODELAY = 10;
 
 void mostrar(unsigned char b);
 void menu();
-void autoFantastico(int* delay);
-void choque(int* delay);
-void carrera(int* delay);
-void pingPong(int* delay);
-void repiqueteo(int* delay);
+void autoFantastico();
+void choque();
+void carrera();
+void pingPong();
+void repiqueteo();
 
 // extern void secuenciaPingPong(int* delay);
 // extern void secuenciaRepiqueteo(int* delay);
@@ -131,13 +137,11 @@ int passwordFn() {
 
   do {
     printw("Ingrese su contraseña de 5 dígitos:\n");
-
     for (int i = 0; i < 5; i++) {
       tecla = getch();
       passIngresada[i] = tecla;
       printw("*");
     }
-
     if (strcmp(password, passIngresada) != 0) {
       error++;
       printw("\nContraseña incorrecta. Intentos restantes: %d\n", 3 - error);
@@ -153,36 +157,35 @@ int passwordFn() {
 //                     FUNCIONES DE DELAY
 // ---------------------------------------------------------------
 
-int ajustarDelay(int n, int cambiaDelay) {
-  if (cambiaDelay < DELAYSUPERIOR && n == 0) {
-    cambiaDelay += CAMBIODELAY;
-    if (cambiaDelay > DELAYSUPERIOR) {
-      cambiaDelay = DELAYSUPERIOR;  // Ajustar al límite superior
+int ajustarDelay(int n, int delayX) {
+  if (delayX < DELAYSUPERIOR && n == 0) {
+    delayX += CAMBIODELAY;
+    if (delayX > DELAYSUPERIOR) {
+      delayX = DELAYSUPERIOR;  // Ajustar al límite superior
     }
-    return cambiaDelay;
+    return delayX;
   }
 
-  if (cambiaDelay > DELAYINFERIOR && n == 1) {
-    cambiaDelay -= CAMBIODELAY;
-    if (cambiaDelay < DELAYINFERIOR) {
-      cambiaDelay = DELAYINFERIOR;  // Ajustar al límite inferior
+  if (delayX > DELAYINFERIOR && n == 1) {
+    delayX -= CAMBIODELAY;
+    if (delayX < DELAYINFERIOR) {
+      delayX = DELAYINFERIOR;  // Ajustar al límite inferior
     }
-    return cambiaDelay;
+    return delayX;
   }
 
-  return cambiaDelay;
+  return delayX;
 }
 
 int controles(int numDelay) {
-  int salir = 1;
+  int salir = 1, tecla;
   noecho();  // no aparecen las teclas que toco
   cbreak();  // no tengo que tocar el enter para que acepte
 
-  int tecla;
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
 
-  timeout(15);
+  // timeout(15);
 
   tecla = getch();
 
@@ -246,54 +249,54 @@ void mostrar(unsigned char bit) {
 // ---------------------------------------------------------------
 //               SECUENCIA PARA EL AUTO FANTASTICO
 // ---------------------------------------------------------------
-void autoFantastico(int* delay) {
+void autoFantastico() {
   for (int i = 0; i < 8; i++) {
     mostrar(patronAutoFantastico[i]);
-    *delay = controles(*delay);
+    DELAYAUTO = controles(DELAYAUTO);
   }
   for (int i = 7; i != 0; i--) {
     mostrar(patronAutoFantastico[i]);
-    *delay = controles(*delay);
+    DELAYAUTO = controles(DELAYAUTO);
   }
 }
 
 // ---------------------------------------------------------------
 //                    SECUENCIA PARA EL CHOQUE
 // ---------------------------------------------------------------
-void choque(int* delay) {
+void choque() {
   for (int i = 0; i < 8; i++) {
     mostrar(patronElChoque[i]);
-    *delay = controles(*delay);
+    DELAYCHOQUE = controles(DELAYCHOQUE);
   }
 }
 
 // ---------------------------------------------------------------
 //                   SECUENCIA PARA LA CARRERA
 // ---------------------------------------------------------------
-void carrera(int* delay) {
+void carrera() {
   for (int i = 0; i < 16; i++) {
     mostrar(patronCarrera[i]);
-    *delay = controles(*delay);
+    DELAYCARRERA = controles(DELAYCARRERA);
   }
 }
 
 // ---------------------------------------------------------------
 //                       SECUENCIA TENIS
 // ---------------------------------------------------------------
-void pingPong(int* delay) {
+void pingPong() {
   for (int i = 0; i < 12; i++) {
     mostrar(patronPingPong[i]);
-    *delay = controles(*delay);
+    DELAYPINGPONG = controles(DELAYPINGPONG);
   }
 }
 
 // ---------------------------------------------------------------
 //                     SECUENCIA REPIQUETEO
 // ---------------------------------------------------------------
-void repiqueteo(int* delay) {
+void repiqueteo() {
   for (int i = 0; i < 57; i++) {
     mostrar(patronRepiqueteo[i]);
-    *delay = controles(*delay);
+    DELAYREPIQUETEO = controles(DELAYREPIQUETEO);
   }
 }
 
@@ -301,7 +304,6 @@ void repiqueteo(int* delay) {
 //                             MENU
 // ---------------------------------------------------------------
 void menu() {
-  int delay = DELAY;
   int salir = 1;
 
   noecho();  // Desactivar la eco de entrada
@@ -343,7 +345,7 @@ void menu() {
         printw("***************************\n");
         refresh();
         do {
-          autoFantastico(&delay);
+          autoFantastico();
         } while (salir);
         break;
       case '2':
@@ -353,7 +355,7 @@ void menu() {
         printw("***************************\n");
         refresh();
         do {
-          choque(&delay);
+          choque(DELAYCHOQUE);
         } while (salir);
         break;
       case '3':
@@ -363,7 +365,7 @@ void menu() {
         printw("***************************\n");
         refresh();
         do {
-          carrera(&delay);
+          carrera(DELAYCARRERA);
         } while (salir);
         break;
       case '4':
@@ -373,7 +375,7 @@ void menu() {
         printw("***************************\n");
         refresh();
         do {
-          pingPong(&delay);
+          pingPong(DELAYPINGPONG);
         } while (salir);
         break;
       case '5':
@@ -383,7 +385,7 @@ void menu() {
         printw("***************************\n");
         refresh();
         do {
-          repiqueteo(&delay);
+          repiqueteo(DELAYREPIQUETEO);
         } while (salir);
         break;
       /*case '6':
